@@ -21,6 +21,7 @@
 		{
 			"run_path": "/home/felixant/projects/ctb-rallard/COMMUN/PacBioData/",
 			"ref_maps": "/home/felixant/scratch/MINIWDL/HiFi-human-WGS-WDL/GRCh38.ref_map.v2p0p0.tsv",
-			"sample_sheet_path": "/home/felixant/scratch/MINIWDL/SampleSheet/"
+			"sample_sheet_path": "/home/felixant/scratch/MINIWDL/SampleSheet/",
+			"output_path": "/home/felixant/scratch/MINIWDL/Outputs"
 		}
 }

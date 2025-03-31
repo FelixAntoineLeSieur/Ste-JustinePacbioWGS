@@ -1,0 +1,3 @@
+[submodule "Postanalysis/geneyx.analysis.api_CHUSJ"]
+	path = Postanalysis/geneyx.analysis.api_CHUSJ
+	url = https://github.com/FelixAntoineLeSieur/geneyx.analysis.api_CHUSJ.git
