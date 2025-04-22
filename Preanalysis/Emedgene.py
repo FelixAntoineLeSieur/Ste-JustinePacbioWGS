@@ -1,7 +1,6 @@
 import requests
 import os,sys
 import logging
-import subprocess
 import json
 from configurator import Config
 
