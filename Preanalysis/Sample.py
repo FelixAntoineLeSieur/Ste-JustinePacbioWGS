@@ -11,7 +11,7 @@ class Sample:
 	"""
 	Sample object for patients. Eventually will be separated into Case Class and Sample Class
 	"""
-	def __init__(self, run_id, well,name="", config_file=os.path.expanduser(".myconf.json")):
+	def __init__(self, run_id, well, name="", bam_path="", status={},HPOs="", config_file=os.path.expanduser(".myconf.json")):
 		self.run_id		=	run_id #ie r84196_20250224_170647
 		configs         = 	Config.from_path(config_file)
 		
@@ -20,9 +20,13 @@ class Sample:
 		self.runs_path	=	configs.Paths.run_path
 		self.well		=	well
 		self.sample_path=	self.runs_path + f"{run_id}/{well}"
-		self.bam_path	=	self.find_bam_path()
-		self.barcode	=	self.bam_path.split("/")[-1].split("bc")[-1].removesuffix(".bam")
 
+		if len(bam_path) != 0:
+			self.bam_path	=	bam_path
+		else:
+			self.bam_path	=	self.find_bam_path()
+
+		self.barcode	=	self.bam_path.split("/")[-1].split("bc")[-1].removesuffix(".bam")
 		#Sometimes, the name from sequencing is not compatible with the Emedgene name, so it must be given manually.
 		#For example, we receive GMXXXX_redo or GMXXXX_new, while the Emedgene name should be GMXXXX 
 		if len(name) != 0:
@@ -30,24 +34,35 @@ class Sample:
 		else:
 			self.name	=	self.find_name()
 
-		self.emg_case_id	=	Emedgene(config_file=config_file).get_emg_id(self.name)
+		#If status is pre-defined, we don't need to investigate emedgene
+		if len(status) != 0:
+			self.case_status = status
+			emg_case_id = "skip"
+			self.phenotypes = ""
+
+		else:
+			emg_case_id	=	Emedgene(config_file=config_file).get_emg_id(self.name)
 			
 		#Does the patient belong to a trio, duo, or a singleton? Alse gender, family role and Affected status
 		#if isinstance(self.emg_case_json,int):
-		if self.emg_case_id == "":
+		if emg_case_id == "":
 			#If we get an int (error code) on Emedgene, we suppose it is likely a validation case, always singleton
 			self.case_status = {"Status": "Singleton", "Role":"proband", "Gender":"null", "Affected": True}
 			self.phenotypes = ""
-		else:
-			self.emg_case_json	=	Emedgene(config_file=config_file).get_case_json(self.emg_case_id)
-			self.case_status =	self.find_status()
+		elif emg_case_id != "skip":
+			emg_case_json	=	Emedgene(config_file=config_file).get_case_json(emg_case_id)
+			self.case_status =	self.find_status(emg_case_json)
 
 			#TODO: Make class for Phenotips
-			self.pheno_case_id	=	Emedgene(config_file=config_file).get_pheno_id(json_file=(self.emg_case_json))
+			pheno_case_id	=	Emedgene(config_file=config_file).get_pheno_id(json_file=(emg_case_json))
 			if self.case_status["Affected"]:
-				self.phenotypes		=	Emedgene(config_file=config_file).phenotips_import_HPO_request(self.pheno_case_id)
+				self.phenotypes		=	Emedgene(config_file=config_file).phenotips_import_HPO_request(pheno_case_id)
 			else:
 				self.phenotypes		=	""
+		
+		#phenotype overrides if present
+		if len(HPOs) != 0:
+			self.phenotypes = HPOs
 
 	def find_bam_path(self):
 		"""
@@ -72,14 +87,13 @@ class Sample:
 		grep_result = subprocess.run(grep_command, shell=True, capture_output=True, text=True)
 		return grep_result.stdout
 
-	def find_status(self):
+	def find_status(self,json_file):
 		"""
 		Obtain the status [Singleton, Duo, Trio] of the Sample.
 		Also returns the role of Sample [Proband, father, mother], gender and affected status
 		Requires the Emedgene json case
 		Returns: Dict ({Status: [Singleton, Duo, Trio, Unknown],Role: [Proband, father, mother,"Unknown"], Gender: [Male,Female, null], Affected: [True, False,None]})
 		"""
-		json_file = self.emg_case_json
 		if "patients" in json_file.keys():
 			family_members = json_file["patients"]
 			number_in_case = len(family_members)
@@ -155,6 +169,7 @@ class Sample:
 		sample_dict={"humanwgs_singleton.sample_id": self.name,\
 			"humanwgs_singleton.sex": (self.case_status["Gender"]),\
   			"humanwgs_singleton.hifi_reads": [self.bam_path],\
+			"humanwgs_singleton.prealigned_bams": ["pbmm2_result"],\
 			"humanwgs_singleton.phenotypes": self.phenotypes,\
   			"humanwgs_singleton.ref_map_file": self.refmaps_path,\
   			"humanwgs_singleton.backend": "HPC"}
@@ -164,7 +179,6 @@ class Sample:
 		with open(sample_file, 'w') as fw:
 			json.dump(sample_dict, fw, indent=4)
 
-		
 
 
 	def __str__(self):
