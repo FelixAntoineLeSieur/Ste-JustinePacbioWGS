@@ -74,7 +74,7 @@ class Sample:
 		if len(bam_path) != 0 and os.path.isfile(bam_path[0]):
 			return bam_path[0]
 		else: 
-			logging.warning("Could not find BAM path")
+			logging.warning(f"Could not find BAM path for sample {self.run_id}/{self.well}")
 			sys.exit(1)
 
 
@@ -123,8 +123,12 @@ class Sample:
 						if role == "Unknown":
 							role = member
 							gender = family_members[member]["gender"]
-							
-							pheno_list = family_members[member]["phenotypes"][0]
+
+							if len(family_members[member]["phenotypes"]) > 0:
+								pheno_list = family_members[member]["phenotypes"][0]
+							else:
+								pheno_list = {"name": "Healthy"}
+
 							#We take a look at the phenotypes to know if parent is affected
 							#The actual phenotype list will be obtained from Phenotips (more up to date)
 							if "name" in pheno_list.keys() and pheno_list["name"] == "Healthy":

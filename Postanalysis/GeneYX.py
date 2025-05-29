@@ -4,7 +4,7 @@ import logging
 import subprocess
 import json
 from configurator import Config
-
+import subprocess
 
 class GeneYX:
 	"""
@@ -80,7 +80,31 @@ class GeneYX:
 			for sample_name in errorList: print(sample_name)
 		else:
 			print("All samples sent successfully")
+	
+	def unify_vcfs(sample_name,output_path,structure_variant_vcf,cnv_vcf,tandem_repeat_vcf):
+		print(output_path)
+		if not os.path.isfile(f"{output_path}/{sample_name}-unifiedVCF.vcf.gz"):
+			print(f"Unifying VCF for {sample_name}")
+			result = subprocess.run([
+				"python3",
+				"../GeneYX/geneyx.analysis.api/scripts/UnifyVcf/PacBioUnifyVcfv1.py",
+				"-o", f"{output_path}/{sample_name}-unifiedVCF.vcf",
+				"-s", structure_variant_vcf,
+				"-c", cnv_vcf,
+				"-r", tandem_repeat_vcf,
+				"-b", "/home/felixant/scratch/MINIWDL/Ste-JustinePacbioWGS/Postanalysis/geneyx.analysis.api_CHUSJ/scripts/UnifyVcf/pathogenic_repeats.hg38.bed"], 
+				capture_output=True, text=True)
 
+			
+			if result.stderr=='':
+				print(result)
+				print(result.stdout)
+				print(f"Unify completed successfully for {sample_name}")
+			else:
+				print(logging.warning(f"Unify failed for {sample_name} with message: {result.stderr}"))
+				sys.exit(1)
+
+		else: print(f"Pre-existing unified VCF found for {sample_name}")
 
 
 #Helper functions taken from GeneYX's github: https://github.com/geneyx/geneyx.analysis.api/tree/d8587302d22e0e5e59a328390f8c89dd04ff52e7/scripts

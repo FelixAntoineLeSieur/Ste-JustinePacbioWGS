@@ -19,13 +19,13 @@ def retrieve_samples(full_list,sample_ID):
 	#Return a Sample Object
 	sample_row = full_list[full_list["Name"]==sample_ID]
 	if sample_row.shape[0] == 0:
-		print(f"Sample {sample_ID} was not found in sample list: {args.list}")
+		print(f"Sample {sample_ID} was not found in sample list: {full_list}")
 		sys.exit()
 	elif sample_row.shape[0] > 1:
 		print(f"More than one match detected in list for sample {sample_ID}")
 		sys.exit()
 	sample_format = Sample(
-	sample_row["family_id"].values[0],
+	sample_row["run_id"].values[0],
 	sample_row["Well"].values[0],
 	name=sample_row["Name"].values[0],
 	bam_path=sample_row["BAM"].values[0],
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 		family_ids.append(args.father)
 	
 	#Find the samples from the list
-	sample_list = pd.read_csv(args.list,sep=";",names=["Name","Well","Barcode","family_id","Gender","Status","Role","HPO","BAM","Affected"])
+	sample_list = pd.read_csv(args.list,sep=";",names=["Name","Well","Barcode","run_id","Gender","Status","Role","HPO","BAM","Affected"])
 	sample_list = sample_list.replace({np.nan: ""})
 	family={}
 	for sample_id in family_ids:
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 		role=sampled_format.case_status["Role"].split(" ")[0]
 		family.update({role:sampled_format})
 
-
+	print(family)
 	full_family = Family(args.name,family)
 	print(full_family)
 	full_family.write_joint_samplesheet()

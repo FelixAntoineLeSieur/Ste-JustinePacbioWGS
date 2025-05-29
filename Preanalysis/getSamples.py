@@ -5,6 +5,7 @@ import argparse
 from Sample import Sample
 from pathlib import Path
 from configurator import Config
+import pandas as pd
 
 """
 Retrieves samples info from Emedgene and Phenotips.
@@ -33,19 +34,51 @@ if __name__ == "__main__":
 	directory_list		= [f for f in run_folder.resolve().glob('*') if not f.is_file()]
 	sample_list	= []
 
+
 	for well_folder in directory_list:
-		#The sample name is contained inP this metadata file, in the pb_format folder
+		#The sample name is contained in this metadata file, in the pb_format folder
 		grep_command = f"grep -o \"BioSample Name=\".*\"\" {well_folder}/pb_formats/*_s*.hifi_reads.bc*.consensusreadset.xml | cut -f2 -d'\"' | tr -d '\n'"
 		grep_result = subprocess.run(grep_command, shell=True, capture_output=True, text=True)
 		given_name = grep_result.stdout
+
+		#Special case for Decodeur Samples
+		if given_name[0:3] == "HSJ":
+			family_name = given_name[:-3]
+			if given_name[-2:] == "03":
+				role = "proband"
+				gender = "null"
+			elif given_name[-2:] == "02":
+				role = f"mother of {family_name}-03"
+				gender = "Female"
+			elif given_name[-2:] == "01":
+				role = f"father of {family_name}-03"
+				gender = "Male"
+			else:
+				print(f"Decodeur name didn't end with 01,02 or 03? Received:{given_name[-2:]}")
+				sys.exit()
+
+			status = {"Status": "Decodeur", "Role":role, "Gender":gender, "Affected": False}
+			print(f"Status for {given_name}: {status}")
+		else:
+			status = {}
+
+
 		well = str(well_folder).split("/")[-1]
-		sample = Sample(args.run,well,given_name,config_file=args.config)
+		sample = Sample(args.run,well,given_name,status=status,config_file=args.config)
 		sample_list.append(sample)
 
 	#Print the samples sorted by well (1_A01, 1_B01...)
-	#We also write the samples to a text file for later use (notably to group trios)
 	sorted_list = sorted(sample_list,key=lambda x: x.well.lower())
 	for sample in sorted_list: 
 		print(sample)
-		with open(args.list, "a") as fw:
-			fw.write(f"{sample.__str__()};{sample.bam_path};{sample.case_status['Affected']}\n")
+
+	#Check to see if the run_ID is already in the list
+	#Having duplicates would cause problems later
+	existing_list = pd.read_csv(args.list,sep=";",names=["Name","Well","Barcode","run_id","Gender","Status","Role","HPO","BAM","Affected"])
+
+	if args.run in existing_list["run_id"].values:
+		print(f"Warning: Samples from run id {args.run} are already in the list. Skipping append")
+	else:
+		for sample in sorted_list:
+			with open(args.list, "a") as fw:
+				fw.write(f"{sample.__str__()};{sample.bam_path};{sample.case_status['Affected']}\n")
