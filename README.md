@@ -1,5 +1,5 @@
 # Ste-JustinePacbioWGS
-Pacbio data processing, including Preanalysis, WGS Analysis and Post-analysis
+Pacbio long read Whole Genome sequencing data processing, including Preanalysis, WGS Analysis and Post-analysis
 
 
 We describe here a workflow for analyzing and processing data received from the Revio PacBio sequencer acquired by the CHU Sainte-Justine. 
@@ -60,7 +60,6 @@ The config file follows this format:
 			"ref_maps": "/home/felixant/scratch/MINIWDL/HiFi-human-WGS-WDL/GRCh38.ref_map.v2p0p0.tsv",
 			"sample_sheet_path": "/home/felixant/scratch/MINIWDL/SampleSheet/",
 			"output_path": "/home/felixant/scratch/MINIWDL/Outputs",
-			"sample_list": "/home/felixant/scratch/MINIWDL/sampleList.tsv",
 			"tertiary_maps": "/home/felixant/scratch/MINIWDL/HiFi-human-WGS-WDL/GRCh38.tertiary_map.v2p0p0.tsv"
 		}
 }
@@ -80,6 +79,26 @@ GM3XXX;2_D01;2004;r84196_YYY;Female;Duo;proband;HP:0000XXX;{path_to_bam};True
 
 
 ## Pre-analysis
-1. The first step is to generate the sample list for the run of interest, if not done before
+The goal of the pre-analysis is to obtain metadata for the samples contained in the desired run, then generate sample sheets to be used as inputs for the Analysis pipeline. \
+The normal use of this part would normally be to use getSamples.py first on a recent run not yet in mySampleList.txt, then run *either* singletonSampleSheet.py on the desired samples names that should be run in singleton, OR jointCallSampleSheet.py to establish a family analysis. 
+For now, the pre-analysis is separated in 3 scripts:
+-	**getSamples.py**
+	- *Usage*: ```python3 Preanalysis/getSamples.py -r {run_id}```  \
+     Optionally, if you have a modified config or list to write to, you can specify them with the -c and -l arguments respectively. Otherwise, the script will use the config "myconf.json" and the list "mySampleList.txt" both in the main folder.
+	- *Outputs*: Using the script will print information about the samples contained in the run folder, like sample name, gender, family status and HPO terms. \
+     The sample metadata will be added to to list defined as argument (by default mySampleList.txt). This list must not contain duplicate samples.
+- 	**singletonSampleSheet.py**
+	- *Usage*: ```python3 Preanalysis/singletonSampleSheet.py -p {proband_name}``` \
+   Optionally, if you have a modified config or list to write to, you can specify them with the -c and -l arguments respectively. Otherwise, the script will use the config "myconf.json" and the list "mySampleList.txt" both in the main folder.
+	- *Outputs*: Will write two files in the configured **sample_sheet_path**:
+		1. Pipeline sample sheet json named "{run_id}_{well}_{sample_name}.json
+		2. "{run_id}_samples" which is a text file containing the list of all samples from this run for which the script singletonSampleSheet.py was used. This file will help keep all of these samples as a batch.
+-	**jointCallSampleSheet.py**
+	- *Usage*: ```python3 Preanalysis/jointCallSampleSheet.py -p {proband_name} -f {father_name} -m {mother_name} -n {chosen_family_name}``` \
+  Optionally, if you have a modified config or list to write to, you can specify them with the -c and -l arguments respectively. Otherwise, the script will use the config "myconf.json" and the list "mySampleList.txt" both in the main folder.
+	- *Outputs*: Similar to the singleton SampleSheet, however for the family WDL has a different input samplesheet. Two files are generated in the configured **sample_sheet_path**:
+		1. Pipeline sample sheet json named "{run_id}_{well}_{sample_name}.json
+		2. "{run_id}_samples" which is a text file containing the list of all samples from this run for which the script singletonSampleSheet.py was used. This file will help keep all of these samples as a batch.
+
 ## Analysis
 ## Post-analysis
