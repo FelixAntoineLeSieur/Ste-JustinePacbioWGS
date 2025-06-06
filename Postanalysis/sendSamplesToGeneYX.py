@@ -3,7 +3,6 @@ import argparse
 from configurator import Config
 from GeneYX import GeneYX
 import logging
-#import runpy
 
 #from geneyx_analysis_api_CHUSJ.scripts.UnifyVcf.UnifyVcf import run
 sys.path.append(sys.path[0]+'/geneyx.analysis.api_CHUSJ/scripts/UnifyVcf')

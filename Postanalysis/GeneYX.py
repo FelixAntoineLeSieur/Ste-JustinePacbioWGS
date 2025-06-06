@@ -87,7 +87,7 @@ class GeneYX:
 			print(f"Unifying VCF for {sample_name}")
 			result = subprocess.run([
 				"python3",
-				"../GeneYX/geneyx.analysis.api/scripts/UnifyVcf/PacBioUnifyVcfv1.py",
+				"Postanalysis/geneyx.analysis.api_CHUSJ/scripts/UnifyVcf/PacBioUnifyVcf.py",
 				"-o", f"{output_path}/{sample_name}-unifiedVCF.vcf",
 				"-s", structure_variant_vcf,
 				"-c", cnv_vcf,
