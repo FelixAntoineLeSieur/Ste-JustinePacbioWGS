@@ -171,7 +171,7 @@ class Sample:
 		the naming convention is: {run_id}_{well}_{sample_name}.json
 		"""
 		sample_dict={"humanwgs_singleton.sample_id": self.name,\
-			"humanwgs_singleton.sex": (self.case_status["Gender"]),\
+			"humanwgs_singleton.sex": (self.case_status["Gender"]).upper(),\
   			"humanwgs_singleton.hifi_reads": [self.bam_path],\
 			"humanwgs_singleton.prealigned_bams": ["pbmm2_result"],\
 			"humanwgs_singleton.phenotypes": self.phenotypes,\

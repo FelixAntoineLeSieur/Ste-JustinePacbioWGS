@@ -141,9 +141,12 @@ class Emedgene:
 
         #Parse the list for observed phenotypes (reject non observed ones)
         hpo_list=[]
-        for terms in data["features"]:
-            if terms["observed"] =='yes':
-                hpo_list.append(terms["id"])
+        if "features" in data.keys():
+            for terms in data["features"]:
+                if terms["observed"] =='yes':
+                    hpo_list.append(terms["id"])
+        else:
+            logging.warning(f"Features could not be found on Phenotips for sample {pheno_id}")
 
         return((",").join(hpo_list).replace('\'',""))
 

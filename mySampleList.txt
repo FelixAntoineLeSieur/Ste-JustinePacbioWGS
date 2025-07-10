@@ -1,2 +1,0 @@
-GMXXX;1_A01;2093;r84196_20250207_143154;Male;Singleton;proband;HPO00001,HP0002;/home/felixant/projects/ctb-rallard/COMMUN/PacBioData/r84196_20250207_143154/1_A01/hifi_reads/m84196_250207_192712_s1.hifi_reads.bc2093.bam;True
-GMUUU;1_A01;2005;r84196_20250210_150130;Female;Duo;mother of GM242598;;/home/felixant/projects/ctb-rallard/COMMUN/PacBioData/r84196_20250210_150130/1_A01/hifi_reads/m84196_250210_150927_s1.hifi_reads.bc2005.bam;False
