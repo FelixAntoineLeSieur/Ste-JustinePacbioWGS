@@ -5,3 +5,4 @@ validation_merged_list.tsv
 .myconf.json
 mySampleList.txt
 *.pyc
+testSingleSamples.csv
