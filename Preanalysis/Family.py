@@ -82,12 +82,8 @@ def define_samplesheet_sample(sample):
 	role = sample.case_status["Role"].split(" ")[0]
 	output_sample= {
 		"sample_id"	: sample.name,
-		"sex"		: sample.case_status["Gender"],
+		"sex"		: sample.case_status["Gender"].upper(),
 		"hifi_reads": [sample.bam_path],
-#This is an added line vs the original samplesheet.
-#It allows us to run pbmm2 outside miniwdl and input the pre-aligned bam here
-#The prealigned string will need to be replaced once the path to prealigned bams exists
-		"prealigned_bams": [f"{role}Prealigned"],
 		"affected": str(sample.case_status["Affected"])
 	}
 	return output_sample
