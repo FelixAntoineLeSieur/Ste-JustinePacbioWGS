@@ -173,7 +173,6 @@ class Sample:
 		sample_dict={"humanwgs_singleton.sample_id": self.name,\
 			"humanwgs_singleton.sex": (self.case_status["Gender"]).upper(),\
   			"humanwgs_singleton.hifi_reads": [self.bam_path],\
-			"humanwgs_singleton.prealigned_bams": ["pbmm2_result"],\
 			"humanwgs_singleton.phenotypes": self.phenotypes,\
   			"humanwgs_singleton.ref_map_file": self.refmaps_path,\
   			"humanwgs_singleton.backend": "HPC"}

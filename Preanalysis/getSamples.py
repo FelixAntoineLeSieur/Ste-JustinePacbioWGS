@@ -34,7 +34,7 @@ if __name__ == "__main__":
 	directory_list		= [f for f in run_folder.resolve().glob('*') if not f.is_file()]
 	sample_list	= []
 
-
+	#For each well folder, we need to retrieve the sample name from the metadata file
 	for well_folder in directory_list:
 		#The sample name is contained in this metadata file, in the pb_format folder
 		grep_command = f"grep -o \"BioSample Name=\".*\"\" {well_folder}/pb_formats/*_s*.hifi_reads.bc*.consensusreadset.xml | cut -f2 -d'\"' | tr -d '\n'"
@@ -66,6 +66,11 @@ if __name__ == "__main__":
 		well = str(well_folder).split("/")[-1]
 		sample = Sample(args.run,well,given_name,status=status,config_file=args.config)
 		sample_list.append(sample)
+
+	if not sample_list:
+		print("Error: No samples found for the given run ID. Check directory path? In conf:")
+		print(f"run_path: {run_path}")
+		sys.exit(1)
 
 	#Print the samples sorted by well (1_A01, 1_B01...)
 	sorted_list = sorted(sample_list,key=lambda x: x.well.lower())
