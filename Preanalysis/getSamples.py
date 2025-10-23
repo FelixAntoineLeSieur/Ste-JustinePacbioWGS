@@ -44,7 +44,7 @@ if __name__ == "__main__":
 		#Special case for Decodeur Samples
 		if given_name[0:3] == "HSJ":
 			family_name = given_name[:-3]
-			if given_name[-2:] == "03":
+			if given_name[-2:] == "03" or given_name[-2:] == "04":
 				role = "proband"
 				gender = "null"
 			elif given_name[-2:] == "02":
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 				role = f"father of {family_name}-03"
 				gender = "Male"
 			else:
-				print(f"Decodeur name didn't end with 01,02 or 03? Received:{given_name[-2:]}")
+				print(f"Decodeur name didn't end with 01,02,03 or 04? Received:{given_name[-2:]}")
 				sys.exit()
 
 			status = {"Status": "Decodeur", "Role":role, "Gender":gender, "Affected": False}
