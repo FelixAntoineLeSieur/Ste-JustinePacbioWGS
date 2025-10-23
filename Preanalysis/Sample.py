@@ -11,20 +11,29 @@ class Sample:
 	"""
 	Sample object for patients. Eventually will be separated into Case Class and Sample Class
 	"""
-	def __init__(self, run_id, well, name="", bam_path="", status={},HPOs="", config_file=os.path.expanduser(".myconf.json")):
+	def __init__(self, run_id, well, name="", bam_path="", fail_bam="", status={},HPOs="", config_file=os.path.expanduser(".myconf.json")):
 		self.run_id		=	run_id #ie r84196_20250224_170647
 		configs         = 	Config.from_path(config_file)
 		
 		self.refmaps_path	=	configs.Paths.ref_maps #This is required when writing the samplesheet
+		self.tertiary_path = configs.Paths.tertiary_maps
 		self.samplesheet_directory = configs.Paths.sample_sheet_path 
 		self.runs_path	=	configs.Paths.run_path
 		self.well		=	well
 		self.sample_path=	self.runs_path + f"{run_id}/{well}"
+		
 
 		if len(bam_path) != 0:
 			self.bam_path	=	bam_path
 		else:
 			self.bam_path	=	self.find_bam_path()
+
+		#Optionally, we can provide a failed reads bam for TR calling
+		if len(fail_bam) != 0:
+			self.fail_bam	=	fail_bam
+		else:
+			self.fail_bam	=	self.find_fail_bam()
+
 
 		self.barcode	=	self.bam_path.split("/")[-1].split("bc")[-1].removesuffix(".bam")
 		#Sometimes, the name from sequencing is not compatible with the Emedgene name, so it must be given manually.
@@ -76,6 +85,19 @@ class Sample:
 		else: 
 			logging.warning(f"Could not find BAM path for sample {self.run_id}/{self.well}")
 			sys.exit(1)
+
+	def find_fail_bam(self):
+		"""
+		Obtain the failed reads . The name varies based on the time of sequencing
+		Returns: Str (File path)
+		"""
+		fail_path = glob.glob(self.sample_path + "/fail_reads/*bc*.bam")
+
+		if len(fail_path) != 0 and os.path.isfile(fail_path[0]):
+			return fail_path[0]
+		else: 
+			logging.warning(f"Could not find failed BAM path for sample {self.run_id}/{self.well}")
+			return ""
 
 
 	def find_name(self):
@@ -173,8 +195,10 @@ class Sample:
 		sample_dict={"humanwgs_singleton.sample_id": self.name,\
 			"humanwgs_singleton.sex": (self.case_status["Gender"]).upper(),\
   			"humanwgs_singleton.hifi_reads": [self.bam_path],\
+  			"humanwgs_singleton.fail_reads": [self.fail_bam],\
 			"humanwgs_singleton.phenotypes": self.phenotypes,\
   			"humanwgs_singleton.ref_map_file": self.refmaps_path,\
+			"humanwgs_singleton.tertiary_map_file": self.tertiary_path,\
   			"humanwgs_singleton.backend": "HPC"}
 		
 		sample_file= f"{self.samplesheet_directory}/{self.run_id}_{self.well}_{self.name}.json"
