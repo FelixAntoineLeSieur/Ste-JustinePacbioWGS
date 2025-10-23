@@ -84,6 +84,7 @@ def define_samplesheet_sample(sample):
 		"sample_id"	: sample.name,
 		"sex"		: sample.case_status["Gender"].upper(),
 		"hifi_reads": [sample.bam_path],
+		"fail_reads": [sample.fail_bam],
 		"affected": str(sample.case_status["Affected"])
 	}
 	return output_sample
