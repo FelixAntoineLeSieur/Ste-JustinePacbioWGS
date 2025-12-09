@@ -4,8 +4,7 @@
 #families containing a different amount of members. 
 #Still uses a samplesheet in format:
 
-set -eu
-config_file="miniwdlv3.cfg"
+set -euo pipefail
 #!/bin/bash
 
 usage() { echo "Usage: $0 [-i <ID>] [-c <Optional_config_file>]" 1>&2; exit 1; }
