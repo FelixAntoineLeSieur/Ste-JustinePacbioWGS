@@ -14,6 +14,7 @@
 # $4: Fasta reference path
 # $5: Output directory
 # $6: Apptainer image path
+set -euo pipefail
 
 module load apptainer/1.3.5
 proband_bam=$(basename $1)
@@ -24,9 +25,13 @@ directory=$5
 
 here_folder=$(dirname $0)
 
-if [ ! -f $here_folder/triomix_v0.0.2.sif ];then
-	apptainer pull $here_folder/triomix_v0.0.2.sif docker://cjyoon/triomix:v0.0.2
+image=$APPTAINER_CACHEDIR/triomix_v0.0.2.sif
+if [ ! -f $image ];then
+	echo "Downloading Triomix apptainer image"
+	apptainer pull $image docker://cjyoon/triomix:v0.0.2
 fi
+
+cp $image $SLURM_TMPDIR
 
 if [ ! -f $SLURM_TMPDIR/$proband_bam ]; then
 	cp $1 $SLURM_TMPDIR
@@ -54,14 +59,14 @@ if [ "$father_line" != "null" ]; then
 	father_line="--father $SLURM_TMPDIR/$(basename $father_bam)"
 fi
 
-cp $6 $SLURM_TMPDIR/
+
 
 # cat << EOF >$SLURM_TMPDIR/triomixScript.sh
 mkdir -p $SLURM_TMPDIR/Triomix_analyses
-echo "apptainer exec -C -W $SLURM_TMPDIR -B $SLURM_TMPDIR -B $SCRATCH -B $HOME/projects \
-	$SLURM_TMPDIR/$image"
-apptainer exec -C -W $SLURM_TMPDIR -B $SLURM_TMPDIR -B $SCRATCH -B $HOME/projects \
-	$SLURM_TMPDIR/$image \
+echo "apptainer exec -C -W $SLURM_TMPDIR -B $SLURM_TMPDIR -B $HOME \
+	$SLURM_TMPDIR/$(basename $image)"
+apptainer exec -C -W $SLURM_TMPDIR -B $SLURM_TMPDIR -B $HOME \
+	$SLURM_TMPDIR/$(basename $image) \
 	python3 /tools/triomix/triomix.py \
 	$father_line \
 	--mother $SLURM_TMPDIR/$mother_bam \

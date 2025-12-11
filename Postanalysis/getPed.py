@@ -10,23 +10,22 @@ import os.path
 # p054    25-01146-T1                     2       1
 # p054    25-01144-T1                     1       1
 
-#Input trioName, script will recover SampleSheet/[trioName].json to infer ped data
+#Input trioName and json samplesheet (in the WGS-WDL format) to infer ped data
 #This input json file is expected to follow the format of the WGS-WDL V3:
 #https://github.com/PacificBiosciences/HiFi-human-WGS-WDL/blob/main/workflows/family.inputs.json
 
 def main():
-	home="/home/felixant"
-	scratch=f"{home}/scratch"
-	if len(sys.argv) < 2:
-		print("Usage: python script.py <trio_name_list>")
+	
+	if len(sys.argv) < 3:
+		print("Usage: python script.py <trio_name_list> <trio_sample_sheet>")
 		sys.exit(1)
 
 	trioName = sys.argv[1]
-	if not os.path.isfile(f"{scratch}/SampleSheet/{trioName}.json"):
-		print(f"Could not find file {trioName}.json in directory {scratch}/SampleSheet")
+	if not os.path.isfile(sys.argv[2]):
+		print(f"Could not find file {sys.argv[2]}")
 		sys.exit(1)
 
-	with open(f"{scratch}/SampleSheet/{trioName}.json",'r') as fileJson:
+	with open(sys.argv[2],'r') as fileJson:
 		sampleSheet = json.load(fileJson)['humanwgs_family.family']
 
 	probandID = sampleSheet['samples'][0]['sample_id']

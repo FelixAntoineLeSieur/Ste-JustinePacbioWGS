@@ -1,7 +1,22 @@
 #!/bin/bash
+#SBATCH --time=00:10:00
+#SBATCH --account=def-rallard
+#SBATCH --output=J-%x.%j.out
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=3G
+#Runs Peddy inside an apptainer image
+#Arguments:
+# $-i <familyID>
+# $-p <proband_name>
+# $-m <mother_name>
+# $-f <father_name>
+# $-d <input_directory>
+
+#It's not normally necessary to run in a sbatch, but for some reason,
+#Running from images takes a long time for the pca step (same for Somalier)
 
 set -eu
-module load apptainer/1.3.5 python/3.11 htslib/1.22.1
+module load apptainer/1.3.5 python/3.11 htslib/1.22.1 bcftools/1.22 
 
 echo "Arguments:"
 for var in "$@"; do
@@ -37,19 +52,20 @@ if [ -z "${proband_name:-}" ] || [ -z "${mother_name:-}" ] || [ -z "${family_id:
 fi
 here_folder=$(realpath $(dirname $0))
 
-#Setup the images
-if [ -z $APPTAINER_CACHEDIR ]; then
-    echo """Warning: You should set an explicit directory for APPTAINER_CACHEDIR in ~/.bashrc IE:
-    export APPTAINER_TMPDIR="~/scratch/singularity_cache/tmp"
-    export APPTAINER_CACHEDIR="/home/felixant/scratch/singularity_cache"
-"""
-    echo "Using script folder for now"
-    export APPTAINER_CACHEDIR="$here_folder/apptainer_cache"
-    mkdir -p $APPTAINER_CACHEDIR
-fi
+# #Setup the images
+# if [ -z $APPTAINER_CACHEDIR ]; then
+#     echo """Warning: You should set an explicit directory for APPTAINER_CACHEDIR in ~/.bashrc IE:
+#     export APPTAINER_TMPDIR="~/scratch/singularity_cache/tmp"
+#     export APPTAINER_CACHEDIR="/home/felixant/scratch/singularity_cache"
+# """
+#     echo "Using script folder for now"
+#     export APPTAINER_CACHEDIR="$here_folder/apptainer_cache"
+#     mkdir -p $APPTAINER_CACHEDIR
+# fi
 
 image=$APPTAINER_CACHEDIR/peddy_v0.4.8.sif
 if [ ! -f $image ]; then
+	echo "Building Peddy apptainer image"
 	apptainer build $image $here_folder/peddy.def
 fi
 

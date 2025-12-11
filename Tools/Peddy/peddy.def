@@ -2,7 +2,7 @@ Bootstrap: docker
 From: python:3.11-slim
 
 %files
-	peddy_requirements.txt /app/peddy_requirements.txt
+	$APPTAINER_CACHEDIR/peddy_requirements.txt /app/peddy_requirements.txt
 %post
 	apt-get update && apt-get install git -y && apt-get clean autoclean \
 		&& apt-get install -y wget

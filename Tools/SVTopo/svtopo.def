@@ -2,7 +2,7 @@ Bootstrap: docker
 From: python:3.11-slim
 
 %files
-	svtopo_requirements.txt /app/svtopo_requirements.txt
+	$APPTAINER_CACHEDIR/svtopo_requirements.txt /app/svtopo_requirements.txt
 
 %post
 	apt-get update && apt-get install git -y && apt-get clean autoclean \
