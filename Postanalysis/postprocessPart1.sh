@@ -27,14 +27,14 @@ usage() {
 
 run_all=false
 while getopts "i:c:g:s" o; do
-    case "${o}" in
-        i)
-            id=${OPTARG}
+	case "${o}" in
+		i)
+			id=${OPTARG}
 			echo "Family ID set to: $id"
-            ;;
-        c)
-            config_file=${OPTARG}
-            ;;
+			;;
+		c)
+			config_file=${OPTARG}
+			;;
 		g)
 			group=${OPTARG}
 			if [ "$group" == "Pragmatiq" ] || [ "$group" == "prag" ] ; then
@@ -50,7 +50,7 @@ while getopts "i:c:g:s" o; do
 				exit
 			fi
 			;;
-        s)
+		s)
 			run_all=true
 			;;
 		:)
@@ -58,9 +58,9 @@ while getopts "i:c:g:s" o; do
 			exit 1
 			;;
 		*)
-            usage
-            ;;
-    esac
+			usage
+			;;
+	esac
 done
 
 
@@ -70,7 +70,7 @@ if [ -z "$1" ]; then
 fi
 
 if [ -z "${id}" ] || [ -z "${group}" ]; then
-    usage
+	usage
 fi
 if [ -z "${config_file}" ]; then
 	echo "No config file provided, using default location $here_folder/../.myconf.json"
@@ -80,7 +80,8 @@ elif [ ! -f "${config_file}" ]; then
 	usage
 fi
 
-samplesheet=$(python3 -c "import json; print(json.load(open('${config_file}'))['Paths']['sample_sheet_path'])")/${id}.json
+#samplesheet=$(python3 -c "import json; print(json.load(open('${config_file}'))['Paths']['sample_sheet_path'])")/${id}.json
+samplesheet=$(jq -r '.Paths.sample_sheet_path' ${config_file})/${id}.json
 
 
 
@@ -124,7 +125,7 @@ function ask_yes_no() {
 
 #Left-align and normalize SNV VCF for GeneYX
 function Normalize() {
-	norm_output="$directory/$1.$family_id.normed.joint.GRCh38.small_variants.phased.vcf.gz"
+	local norm_output="$directory/$1.$family_id.normed.joint.GRCh38.small_variants.phased.vcf.gz"
 	if [[ ! -f "$norm_output" ]]; then
 		bcftools norm -m-any --check-ref -w -f "$fasta_path" -Oz -o "$norm_output" "$2"
 	fi
@@ -152,9 +153,9 @@ function buildSamplefiles() {
 		"svVcf": "$2",
 		"genomeBuild": "hg38",
 		"patientId": "$1",
-	    "SampleTarget": "WholeGenomeLR",
-	    "sampleQcData": "QCData/${family_id}_${1}_QC_new.json",
-	    "patientGender": "$4",
+		"SampleTarget": "WholeGenomeLR",
+		"sampleQcData": "QCData/${family_id}_${1}_QC_new.json",
+		"patientGender": "$4",
 		"ExcludeFromLAF": "$5",
 		"groupAssignmentName": "$group_name",
 		"groupAssignmentCode": "$group_code"
@@ -595,17 +596,20 @@ fi
 #MultiQC step
 if [ "$include_multiqc" == true ] || [ "$run_all" == true ]; then
 	cd "$directory"
-	apptainerGet multiqc_v1.3.3-pdf.sif docker://multiqc/multiqc:pdf-v1.33
+	apptainerGet multiqc_v1.3.3.sif docker://multiqc/multiqc:v1.33
 	dependencyCallLine=$(dependencyLine "${dependencies[@]}")
 	echo "dependency line: $dependencyCallLine"
 	#I use an sbatch so we can use job dependencies and run this AFTER the other steps
-	dependencies+=("$(sbatch --parsable -J multiqc_${family_id} -D $directory $here_folder/../Tools/MultiQC/multiQccall_from_image.sh)")
+	dependencies+=("$(sbatch --parsable -J multiqc_${family_id} -D $directory $here_folder/../Tools/MultiQc/multiQccall_from_image.sh)")
 fi
 
 #Cleanup step
 if [ "$include_cleanup" == true ] || [ "$run_all" == true ]; then
 	dependencyCallLine=$(dependencyLine "${dependencies[@]}")
 	echo "dependency line: $dependencyCallLine"
-	sbatch $dependencyCallLine -J cleanup_$family_id $here_folder/cleanupDarSend.sh
+	bash $here_folder/cleanup.sh -i $family_id -d $directory -c $config_file
+	bash $here_folder/outputs_Json.sh -i $family_id -d $directory -c $config_file
+	bash $here_folder/send_Symlinks_Narval.sh -i $family_id -d $directory -c $config_file -r
+	sbatch $dependencyCallLine -J Globus_$family_id $here_folder/send_Symlinks_Narval.sh -i $family_id -d $directory -c $config_file -r
 	exit
 fi

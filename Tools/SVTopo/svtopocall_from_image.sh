@@ -26,14 +26,48 @@ echo "Arguments:"
 for var in "$@"; do
  echo $var
 done
-prefix=${1%%_*} #Prefix cannot contain underscores
-cp "$2" "$SLURM_TMPDIR/$(basename $2)" #Haplotag Bam
-bam="$(basename $2)"
-cp "$3" "$SLURM_TMPDIR/$(basename $3)" #Bam Index
-cp "$4" "$SLURM_TMPDIR/$(basename $4)" #Supporting reads
-supporting_reads="$(basename $4)"
-cp "$5" "$SLURM_TMPDIR/$(basename $5)" #VCF
-vcf="$(basename $5)"
+
+echo "Arguments:"
+for var in "$@"; do
+ echo $var
+done
+usage() { echo "Usage: $0  [-p <prefix>] [-b <haplotagged bam>] [-i <haplotagged bam index>] [-s <supporting reads>] [-v <SV vcf>]" 1>&2; exit 1; }
+
+while getopts ":p:b:i:r:d:v:" o; do
+    case "${o}" in
+        p)
+            prefix=${OPTARG}
+            prefix=${1%%_*} #Prefix cannot contain underscores
+            ;;
+        b)
+            haplotagged_bam=${OPTARG}
+            ;;
+        i)
+            haplotagged_bam_index=${OPTARG}
+      			;;
+		    s)
+            supporting_reads=${OPTARG}
+            ;;
+        v)
+            vcf=${OPTARG}
+            ;;
+	      *)
+            usage
+            ;;
+    esac
+done
+
+if [ -z "${prefix:-}" ] || [ -z "${haplotagged_bam:-}" ] || [ -z "${haplotagged_bam_index:-}" ] || [ -z "${supporting_reads:-}" ] || [ -z "${vcf:-}" ]; then
+	usage
+fi
+
+cp "$haplotagged_bam" "$SLURM_TMPDIR"
+bam="$(basename $haplotagged_bam)"
+cp "$haplotagged_bam_index" "$SLURM_TMPDIR"
+cp "$supporting_reads" "$SLURM_TMPDIR"
+supporting_reads="$(basename $supporting_reads)"
+cp "$vcf" "$SLURM_TMPDIR"
+vcf="$(basename $vcf)"
 outputDir=$6
 resource_folder=$7
 # We manually pass the script folder because on Fir $0 is in SLURMTMPDIR when launched from sbatch
