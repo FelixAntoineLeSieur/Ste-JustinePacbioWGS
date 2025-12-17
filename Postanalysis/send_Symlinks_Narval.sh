@@ -84,6 +84,5 @@ ENVDIR=/tmp/$RANDOM
 virtualenv --no-download $ENVDIR
 source $ENVDIR/bin/activate
 pip install --no-index --upgrade pip
-pip install globus-sdk
-pip freeze --local > $(dirname $0)/../Tools/requirementsGlobus.txt
+pip install -r $(dirname $0)/../Tools/requirementsGlobus.txt
 python3 globus_send.py -c "$config_file" -d "$directory"
