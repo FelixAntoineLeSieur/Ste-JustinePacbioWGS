@@ -612,20 +612,20 @@ if [ "$include_cleanup" == true ] || [ "$run_all" == true ]; then
 	echo "dependency line for Cleanup: $dependencyCallLine"
 	bash $here_folder/cleanup.sh -i $family_id -d $directory -c $config_file
 	bash $here_folder/outputs_Json.sh -i $family_id -d $directory -c $config_file
-	#bash $here_folder/send_Symlinks_Narval.sh -i $family_id -d $directory -c $config_file -h $here_folder -r
+	bash $here_folder/send_Symlinks_Narval.sh -i $family_id -d $directory -c $config_file -h $here_folder -r
+
 	loadEnv "Globus_env"
 	flow=6336492e-e308-4a67-b78e-13684c747472 # move and delete flow
 	destination_endpoint=$(jq -r '.Transfers.destination_endpoint' ${config_file}) # Narval endpoint UUID
 	destination_collection=":$(jq -r '.Transfers.destination_collection' ${config_file})" # Narval collection UUID
 	source_endpoint=$(jq -r '.Transfers.origin_endpoint' ${config_file})
 	source_collection=":$(jq -r '.Transfers.origin_collection' ${config_file})"
-	cluster=$(jq -r '.Transfers.origin_cluster' ${config_file})
 	if [ -z $source_endpoint ] || [ -z $destination_endpoint ]; then
 		echo "Given cluster endpoint for origin or destination not found."
 		exit 1
 	fi
-	globus login --flow $flow --gcs ${destination_endpoint}${destination_collection} --gcs ${source_endpoint}${source_collection} --cluster $cluster
-	echo "sbatch $dependencyCallLine -J Globus_$family_id $here_folder/send_Symlinks_Narval.sh -i $family_id -d $directory -c $config_file -h $here_folder -r"
-	sbatch $dependencyCallLine -J Globus_$family_id $here_folder/send_Symlinks_Narval.sh -i $family_id -d $directory -c $config_file -h $here_folder -r
+	globus login --flow $flow --gcs ${destination_endpoint}${destination_collection} --gcs ${source_endpoint}${source_collection}
+	echo "sbatch $dependencyCallLine -J Globus_$family_id $here_folder/globus_cli_send.sh -i $family_id -d $directory -c $config_file -h $here_folder"
+	sbatch $dependencyCallLine -J Globus_$family_id $here_folder/globus_cli_send.sh -i $family_id -d $directory -c $config_file -h $here_folder
 	exit
 fi
