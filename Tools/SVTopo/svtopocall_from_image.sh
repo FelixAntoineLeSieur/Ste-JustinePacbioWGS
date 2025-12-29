@@ -27,17 +27,15 @@ for var in "$@"; do
  echo $var
 done
 
-echo "Arguments:"
-for var in "$@"; do
- echo $var
-done
-usage() { echo "Usage: $0  [-p <prefix>] [-b <haplotagged bam>] [-i <haplotagged bam index>] [-s <supporting reads>] [-v <SV vcf>]" 1>&2; exit 1; }
+usage() { echo "Usage: $0  [-p <prefix>] [-b <haplotagged bam>] [-i <haplotagged bam index>] [-s <supporting reads>] [-v <SV vcf>] [-r <resource folder>] [-o <Output Dir>] [-h <Ste-JustinePacbioWGS folder>]" 1>&2; exit 1; }
 
-while getopts ":p:b:i:r:d:v:" o; do
+while getopts ":p:b:i:r:v:o:s:h:" o; do
     case "${o}" in
         p)
+            echo "prefix: ${OPTARG}"
             prefix=${OPTARG}
-            prefix=${1%%_*} #Prefix cannot contain underscores
+            prefix=${prefix%%_*} #Prefix cannot contain underscores
+            echo "prefix after removing underscores: ${prefix}"
             ;;
         b)
             haplotagged_bam=${OPTARG}
@@ -51,13 +49,23 @@ while getopts ":p:b:i:r:d:v:" o; do
         v)
             vcf=${OPTARG}
             ;;
+	      r)
+            resource_folder=${OPTARG}
+            ;;
+        o)
+            outputDir=${OPTARG}
+            ;;
+        h)
+            here_folder=${OPTARG}
+            ;;
 	      *)
+            echo "Received invalid option"
             usage
             ;;
     esac
 done
 
-if [ -z "${prefix:-}" ] || [ -z "${haplotagged_bam:-}" ] || [ -z "${haplotagged_bam_index:-}" ] || [ -z "${supporting_reads:-}" ] || [ -z "${vcf:-}" ]; then
+if [ -z "${prefix:-}" ] || [ -z "${haplotagged_bam:-}" ] || [ -z "${haplotagged_bam_index:-}" ] || [ -z "${supporting_reads:-}" ] || [ -z "${vcf:-}" ] || [ -z "${resource_folder:-}" ]; then
 	usage
 fi
 
@@ -68,10 +76,8 @@ cp "$supporting_reads" "$SLURM_TMPDIR"
 supporting_reads="$(basename $supporting_reads)"
 cp "$vcf" "$SLURM_TMPDIR"
 vcf="$(basename $vcf)"
-outputDir=$6
-resource_folder=$7
 # We manually pass the script folder because on Fir $0 is in SLURMTMPDIR when launched from sbatch
-here_folder=$8 
+echo "here folder: $here_folder"
 
 # #This is a home-made image, not hosted on dockerhub for now
 image=$APPTAINER_CACHEDIR/svtopo_v0.3.0.sif
@@ -109,6 +115,10 @@ svtopovz \
   --annotation-bed "repeatmaskerUCSC.bed.gz" "retrotransposons.bed" \
   --verbose
 EOF
+cat $SLURM_TMPDIR/svtopo_apptainer_script.sh
+echo "----"
+ls $SLURM_TMPDIR
+echo "----"
 chmod +x $SLURM_TMPDIR/svtopo_apptainer_script.sh
 
 mkdir -p $SLURM_TMPDIR/SVTOPO_OUTPUTS

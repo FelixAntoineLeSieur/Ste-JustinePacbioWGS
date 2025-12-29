@@ -22,11 +22,11 @@ echo "Arguments:"
 for var in "$@"; do
  echo $var
 done
-usage() { echo "Usage: $0 [-i <familyID>] [-d <directory to clean>] [-c <optional config file (default .myconf.json)>]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-i <familyID>] [-d <directory to clean>] [-c <optional config file (default .myconf.json)>] [-h <here_folder>]" 1>&2; exit 1; }
 config_file="$(dirname $0)/../.myconf.json"
 cluster="narval.alliancecan.ca"
 identity_line=""
-while getopts ":i:d:c:r" o; do
+while getopts ":i:d:c:rh:" o; do
 	case "${o}" in
 		i)
 			family_id=${OPTARG}
@@ -50,6 +50,9 @@ while getopts ":i:d:c:r" o; do
 				exit
 			fi
 			identity_line="-e \"ssh -i $identity_file\""
+			;;
+		h)
+			here_folder=${OPTARG}
 			;;
 		*)
 			usage
@@ -77,12 +80,40 @@ else
 	find "$directory" -type l -printf '%P\n' | \
 		rsync -rlPv -e "ssh -i $identity_file" --files-from=- "$directory" "$USER@$cluster:$destination_path/$family_id"
 fi
+echo "here folder: $here_folder/../Tools/Globus_env"
+ENVDIR=$here_folder/../Tools/Globus_env
+if [ -d "$ENVDIR" ]; then
+	echo "using existing Globus environment at $ENVDIR"
+	source $ENVDIR/bin/activate
+else
+	virtualenv --no-download $ENVDIR
+	source $ENVDIR/bin/activate
+	pip install --no-index --upgrade pip
+	echo "Loading Globus environment"
+	pip install -r $here_folder/../Tools/requirementsGlobus.txt
+fi
+# ENVDIR=/tmp/$RANDOM
+# virtualenv --no-download $ENVDIR
+# source $ENVDIR/bin/activate
+# pip install --no-index --upgrade pip
+# pip install -r $(dirname $0)/../Tools/requirementsGlobus.txt
+# python3 globus_send.py -c "$config_file" -d "$directory"
 
-echo "Loading Globus Environment"
-module load python/3.11
-ENVDIR=/tmp/$RANDOM
-virtualenv --no-download $ENVDIR
-source $ENVDIR/bin/activate
-pip install --no-index --upgrade pip
-pip install -r $(dirname $0)/../Tools/requirementsGlobus.txt
-python3 globus_send.py -c "$config_file" -d "$directory"
+cat << EOF > globusFlow_$family_id.json
+{
+	"source": {
+		"id": "$(jq -r '.Transfers.origin_collection' $config_file)",
+		"path": "$directory/"
+	},
+	"destination": {
+		"id": "$(jq -r '.Transfers.destination_collection' $config_file)",
+		"path": "$destination_path/$family_id/"
+	},
+	"transfer_label": "Transfer $family_id to Narval",
+	"verify_checksum": true
+}
+EOF
+cat globusFlow_$family_id.json
+move_flow=6336492e-e308-4a67-b78e-13684c747472 ##UUID of the move and delete flow
+globus flows start --input file:globusFlow_$family_id.json $move_flow 
+rm globusFlow_$family_id.json

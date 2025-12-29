@@ -13,17 +13,51 @@
 # $3: Father line (either "null" if family is duo or "--father <fatherBAM>")
 # $4: Fasta reference path
 # $5: Output directory
-# $6: Apptainer image path
 set -euo pipefail
-
 module load apptainer/1.3.5
-proband_bam=$(basename $1)
-mother_bam=$(basename $2)
-father_line=$3
-fasta_path=$(basename $4)
-directory=$5
 
-here_folder=$(dirname $0)
+
+echo "Arguments:"
+for var in "$@"; do
+ echo $var
+done
+
+usage() { echo "Usage: $0  [-p <proband bam>] [-m <mother bam>] [-f <father bam>] [-r <fasta reference>] [-o <Output Dir]" 1>&2; exit 1; }
+father_line=""
+while getopts ":p:m:f:r:o:" o; do
+    case "${o}" in
+        p)
+            proband_bam=${OPTARG}
+            ;;
+        m)
+            mother_bam=${OPTARG}
+            ;;
+        f)
+            #Will be blank in case of duo
+			if [ "${OPTARG}" == "" ]; then
+				father_bam=""
+				father_line=""
+			else
+				father_bam=${OPTARG}
+				father_line="--father ${father_bam}"
+			fi
+            ;;
+        r)
+            fasta_path=${OPTARG}
+            ;;
+        o)
+            directory=${OPTARG}
+            ;;
+        *)
+			echo "Received invalid option"
+            usage
+            ;;
+    esac
+done
+
+if [ -z "${proband_bam:-}" ] || [ -z "${mother_bam:-}" ] || [ -z "${fasta_path:-}" ] || [ -z "${directory:-}" ]; then
+    usage
+fi
 
 image=$APPTAINER_CACHEDIR/triomix_v0.0.2.sif
 if [ ! -f $image ];then
@@ -34,26 +68,24 @@ fi
 cp $image $SLURM_TMPDIR
 
 if [ ! -f $SLURM_TMPDIR/$proband_bam ]; then
-	cp $1 $SLURM_TMPDIR
+	cp $proband_bam $SLURM_TMPDIR
 	
 fi
-cp $1.bai $SLURM_TMPDIR
+cp $proband_bam.bai $SLURM_TMPDIR
 if [ ! -f $SLURM_TMPDIR/$mother_bam ]; then
-  cp $2 $SLURM_TMPDIR
+  cp $mother_bam $SLURM_TMPDIR
   
 fi
-cp $2.bai $SLURM_TMPDIR
+cp $mother_bam.bai $SLURM_TMPDIR
 if [ ! -f $SLURM_TMPDIR/$fasta_path ]; then
-  cp $4 $SLURM_TMPDIR
-  cp $4.fai $SLURM_TMPDIR
+  cp $fasta_path $SLURM_TMPDIR
+  cp $fasta_path.fai $SLURM_TMPDIR
 fi
 
 
 if [ "$father_line" != "null" ]; then
-	father_bam=$(echo $father_line | cut -d' ' -f2)
-	if [ ! -f $SLURM_TMPDIR/$(basename $father_bam) ]; then
-		cp $father_bam $SLURM_TMPDIR
-		
+	if [ ! -f $SLURM_TMPDIR/$father_bam ]; then
+		cp $father_bam $SLURM_TMPDIR		
 	fi
 	cp $father_bam.bai $SLURM_TMPDIR
 	father_line="--father $SLURM_TMPDIR/$(basename $father_bam)"
@@ -69,9 +101,9 @@ apptainer exec -C -W $SLURM_TMPDIR -B $SLURM_TMPDIR -B $HOME \
 	$SLURM_TMPDIR/$(basename $image) \
 	python3 /tools/triomix/triomix.py \
 	$father_line \
-	--mother $SLURM_TMPDIR/$mother_bam \
-	--child $SLURM_TMPDIR/$proband_bam \
-	--reference $SLURM_TMPDIR/$fasta_path \
+	--mother $SLURM_TMPDIR/$(basename $mother_bam) \
+	--child $SLURM_TMPDIR/$(basename $proband_bam) \
+	--reference $SLURM_TMPDIR/$(basename $fasta_path) \
 	--parent \
 	--thread 8 \
 	--snp "/tools/triomix/common_snp/grch38_common_snp.bed.gz" \

@@ -21,8 +21,8 @@ while getopts ":i:d:c:" o; do
             ;;
         d)
             directory=${OPTARG}
-			if [ ! -d "$directory/$directory" ]; then
-				echo "Could not find directory $directory/$directory"
+			if [ ! -d "$directory" ]; then
+				echo "Could not find directory $directory"
 				exit
 			fi
             ;;

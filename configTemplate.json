@@ -29,7 +29,13 @@
 		},
 	"Transfers":
 		{
-			"origin_cluster": "Rorqual",
-			"identity_file": "/home/felixant/.ssh/RorqualRobotInteractive"
+			"origin_cluster": "Fir",
+			"origin_endpoint": "Globus UUID",
+			"origin_collection": "Globus UUID",
+			"identity_file": "/home/felixant/.ssh/FirInteractive",
+			"destination_cluster": "Narval",
+			"destination_path": "/home/felixant/projects/ctb-rallard/COMMUN/PacBioData/OutputFamilies/",
+			"destination_endpoint": "Globus UUID",
+			"destination_collection": "Globus UUID"
 		}
 }
