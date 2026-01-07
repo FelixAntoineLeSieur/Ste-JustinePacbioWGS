@@ -69,7 +69,13 @@ The config file follows this format see configTemplate.json:
 	"Transfers":
 		{
 			"origin_cluster": "Fir",
-			"identity_file": "/home/felixant/.ssh/FirInteractive"
+			"origin_endpoint": "Globus UUID",
+			"origin_collection": "Globus UUID",
+			"identity_file": "/home/felixant/.ssh/FirInteractive",
+			"destination_cluster": "Narval",
+			"destination_path": "/home/felixant/projects/ctb-rallard/COMMUN/PacBioData/OutputFamilies/",
+			"destination_endpoint": "Globus UUID",
+			"destination_collection": "Globus UUID"
 		}
 }
 ```
@@ -88,31 +94,40 @@ GM1XXX;2_B01;2002;r84196_XXX;Male;Duo;proband;HP:0000XXX,HP:000YYY;{path_to_bam}
 GM2XXX;2_C01;2003;r84196_XXX;Female;Duo;mother of GM1XXX;;{path_to_bam};False
 GM3XXX;2_D01;2004;r84196_YYY;Female;Duo;proband;HP:0000XXX;{path_to_bam};True
 ```
-
+\
+>[!NOTE]
+>For the following, note that for most scripts you can use -c to supply an alternate config file name. Otherwise the default name is ".myconf.json".\
+>Some scripts will also use default values for paths, such as "mySampleList.txt" for most Pre-analysis steps
 
 ## Pre-analysis
 The goal of the pre-analysis is to obtain metadata for the samples contained in the desired run, then generate sample sheets to be used as inputs for the Analysis pipeline. \
-The normal use of this part would normally be to use getSamples.py first on a recent run not yet in mySampleList.txt, then run *either* singletonSampleSheet.py on the desired samples names that should be run in singleton, OR jointCallSampleSheet.py to establish a family analysis. 
-For now, the pre-analysis is separated in 3 scripts:
+The normal use of this part would normally be to use getSamples.py first on a recent run not yet in mySampleList.txt, then run *either* singletonSampleSheet.py on the desired samples names that should be run in singleton, OR jointCallSampleSheet.py to establish a family analysis. The getStudy.py is only used to get a reference of a study group for a line-separated list of samples. 
 -	**getSamples.py**
 	- *Usage*: ```python3 Preanalysis/getSamples.py -r {run_id}```  \
-     Optionally, if you have a modified config or list to write to, you can specify them with the -c and -l arguments respectively. Otherwise, the script will use the config "myconf.json" and the list "mySampleList.txt" both in the main folder.
+    - *Goal*: Use this script to fill to retrieve metadata from various sources and fill a metadata list so we don't have to retrieve that info every time. Precursor script to the samplesheet-writing scripts. \
 	- *Outputs*: Using the script will print information about the samples contained in the run folder, like sample name, gender, family status and HPO terms. \
-     The sample metadata will be added to to list defined as argument (by default mySampleList.txt). This list must not contain duplicate samples.
+     The sample metadata will be added to a list defined as argument (by default mySampleList.txt). This list must not contain duplicate samples.
+-	**getStudy.py**
+	-	*Usage*: ```python3 Preanalysis/getStudy.py -s {line-separated list of ID you need the study group for} -p {pragmatiq csv extracted from sharepoint}``` \
+  	-	*Goal*: Use this script to query a sample list extracted from sharepoint, the goal is to extract the study group (validation, Lr-prag, etc) of the samples given as a separate list \
+    -	*Outputs*: This script simply writes out the study groups in stdout, I use this to fill my excel sheet.
 - 	**singletonSampleSheet.py**
 	- *Usage*: ```python3 Preanalysis/singletonSampleSheet.py -p {proband_name}``` \
-   Optionally, if you have a modified config or list to write to, you can specify them with the -c and -l arguments respectively. Otherwise, the script will use the config "myconf.json" and the list "mySampleList.txt" both in the main folder.
+ 	- *Goal*: This is a samplesheet-writing script for singletons, requires the metadata list obtained with getSamples.py. Necessary for the Analysis phase \
 	- *Outputs*: Will write two files in the configured **sample_sheet_path**:
 		1. Pipeline sample sheet json named "{run_id}_{well}_{sample_name}.json
 		2. "{run_id}_samples" which is a text file containing the list of all samples from this run for which the script singletonSampleSheet.py was used. This file will help keep all of these samples as a batch.
 -	**jointCallSampleSheet.py**
 	- *Usage*: ```python3 Preanalysis/jointCallSampleSheet.py -p {proband_name} -f {father_name} -m {mother_name} -n {chosen_family_name}``` \
-  Optionally, if you have a modified config or list to write to, you can specify them with the -c and -l arguments respectively. Otherwise, the script will use the config "myconf.json" and the list "mySampleList.txt" both in the main folder.
+    - *Goal*: This is a samplesheet-writing script for families, requires the metadata list obtained with getSamples.py. Necessary for the Analysis phase \
 	- *Outputs*: Similar to the singleton SampleSheet, however for the family WDL has a different input samplesheet. Two files are generated in the configured **sample_sheet_path**:
 		1. Pipeline sample sheet json named "{run_id}_{well}_{sample_name}.json
 		2. "{run_id}_samples" which is a text file containing the list of all samples from this run for which the script singletonSampleSheet.py was used. This file will help keep all of these samples as a batch.
 
 ## Analysis
-
+This section is about running the actual WGS pipeline, using the sample sheets created during the previous section. \ 
+- **tmuxLaunchTrio.sh**
+	- *Usage*: bash Analysis/tmuxLaunchTrio.py -i {Trio_ID}
 
 ## Post-analysis
+
