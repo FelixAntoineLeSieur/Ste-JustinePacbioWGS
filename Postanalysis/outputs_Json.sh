@@ -77,16 +77,14 @@ sed -i.bak2 "s,$local_absolute_path_prefix,$destination_absolute_path,g" "$outpu
 
 
 function updateSymlink() {
-	local index=$1
-	local new_filename=$2
-	local old_path=$3
-	local new_path=$4
-	local name=$5
+	local index=$1 			# the key in outputs.json
+	local new_filename=$2 	# The name the file should have in S3-Storage
+	local old_path=$3		# The absolute path of the destination, will need to be replaced by...
+	local new_path=$4		# ...the relative path to the Output Folder in destination
+	local name=$5			# The individual sample name
 	local roleDestination=$6
 	local full_filepath=$(jq -r --arg index1 $index '.[$index1][]' $outputs_file | grep $name)
-	echo "Substitution of $old_path to $new_path for $full_filepath"
 	local new_filepath=${full_filepath/$old_path/$new_path}
-	echo "Creating symlink for $full_filepath to $new_filepath as $roleDestination/${new_filename}"
 	ln -sf "$new_filepath" "$roleDestination/${new_filename}"
 }
 
@@ -101,7 +99,7 @@ tail -n +2 "$family_sampleSheet" | while read p; do
 	# When sending to Narval, the path should be ../../../OutputFamilies/$directory
 	# Because we want to keep relative paths to avoid user-specific absolute paths
 
-	new_path="../../../OutputFamilies"
+	new_path="../../../OutputFamilies/$family_id"
 
 	#This is a file to keep track of all samples and their new locations
 	echo "$role/$name/$family_id,$destination_absolute_path/" >>fullsampleSheet.csv
@@ -122,23 +120,7 @@ s3_destination="$HOME/projects/ctb-rallard/COMMUN/PacBioData/S3-Storage/"
 echo "Sending S3-Storage to Narval: $destination_path/$family_id"
 echo "Rsync command:"
 echo "rsync -rlv $s3_local/$family_id 'NarvalInteractiveRobot:$s3_destination'"
-# rsync -rlv $s3_local/$family_id "${prefix}InteractiveRobot:$S3Destination"
-# find "$s3_local/$family_id" -type l -printf '%P\n' | \
-# 	rsync -rlvP --files-from=- "$s3_local/$family_id" "NarvalInteractiveRobot:$destination/$family_id"
-# echo "Rsync Complete"
-
-echo "Check size of $SCRATCH/$family_id ?"
-select yn in "yes" "no"; do
-    case $yn in
-	yes)
-		du -h $SCRATCH/$family_id | grep -e "[0-9]G"
-	    break
-	    ;;
-	no)
-	    break
-	    ;;
-	*)
-	    echo "please select 1 or 2"
-	    ;;
-    esac
-done
+rsync -rlv $s3_local/$family_id "NarvalInteractiveRobot:$s3_destination"
+find "$s3_local/$family_id" -type l -printf '%P\n' | \
+	rsync -rlvP --files-from=- "$s3_local/$family_id" "NarvalInteractiveRobot:$destination_absolute_path"
+echo "Rsync Complete"

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=00:10:00
+#SBATCH --time=01:00:00
 #SBATCH --account=def-rallard
 #SBATCH --output=J-%x.%j.out
 #SBATCH --cpus-per-task=1
@@ -120,11 +120,8 @@ if [ ! -f "$family_id.merged.normed.joint.GRCh38.small_variants.phased.vcf.gz" ]
 
 mkdir -p "$input_directory/Peddy_analyses"
 echo "Running Peddy relate"
-# We want this to run on the interactive node, no access to multi-threading
-# export OMP_NUM_THREADS=1 
-# export OPENBLAS_NUM_THREADS=1
-# export GOTO_NUM_THREADS=1
-apptainer exec -C -B $SCRATCH --pwd "$input_directory/Peddy_analyses" \
+
+apptainer exec -C -B $SCRATCH --pwd "$input_directory/Peddy_analyses" -w "$SLURM_TMPDIR" \
 	$image \
 	python -m peddy --plot --sites hg38 --prefix "${family_id}_peddy" \
 	"$input_directory/$family_id.merged.normed.joint.GRCh38.small_variants.phased.vcf.gz" \

@@ -2,8 +2,7 @@
 #SBATCH --job-name=Globus_${family_id}
 #SBATCH --output=J-%x.%j.out
 #SBATCH --account=def-rallard
-#SBATCH --mem=4G
-#SBATCH --time=01:00:00
+#SBATCH --time=00:10:00
 
 # This script is meant to use globus to send a fully processed folder
 # This will ignore symlinks 

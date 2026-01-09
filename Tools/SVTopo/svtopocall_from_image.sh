@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --time=5:00:00
+#SBATCH --time=8:00:00
 #SBATCH --account=def-rallard
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=1
 #SBATCH --output=J-%x.%j.out
 #SBATCH --mem=8G
 

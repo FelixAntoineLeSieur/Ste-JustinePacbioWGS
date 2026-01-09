@@ -153,7 +153,7 @@ function buildSamplefiles() {
 		"snvVcf": "$3",
 		"svVcf": "$2",
 		"genomeBuild": "hg38",
-		"patientId": "$1",
+		"patientId": "${1}_$family_id",
 		"SampleTarget": "WholeGenomeLR",
 		"sampleQcData": "QCData/${family_id}_${1}_QC_new.json",
 		"patientGender": "$4",
@@ -212,42 +212,42 @@ function apptainerGet() {
 
 #Gathers QC data for all samples
 function buildQCData() {
-	stat_file="$directory/_LAST/out/stats_file/$family_id.stats.txt"
-	upstream_folder=$(cd "$directory"/_LAST/call-upstream-"$2"-* ; pwd)
-	bam_reads=$(grep "$1" "$stat_file" | cut -f2)
-	map_reads=$(grep "$1" "$stat_file" | cut -f8)
-	mean_cov=$(grep "$1" "$stat_file" | cut -f12)
-	index=$( expr "$2" + 1 )
-	bam_file=$(grep 'hifi_reads.bc' "$samplesheet" | sed "${index}q;d" | cut -d'"' -f2)
-	bam_directory=$(dirname $(dirname $bam_file)) #/.../1_X01
-	failed_reads=$(grep -w '<Q20 Reads' /"$bam_directory"/statistics/m*.ccs_report.txt | cut -d: -f2 | cut -d' ' -f2 | sed "s/,//g")
-	num_snp=$(grep "$1" "$stat_file" | cut -f22)
-	ratio_hethom=$(grep "$1" "$stat_file" | cut -f24)
-	num_het=$(grep -w '^PSC' "$directory/_LAST/out/small_variant_stats/$2/$1.GRCh38.small_variants.vcf.stats.txt" | cut -f6)
-	num_hom=$(grep -w '^PSC' "$directory/_LAST/out/small_variant_stats/$2/$1.GRCh38.small_variants.vcf.stats.txt" | cut -f5)
-	total_var=$(tail -n 1 "$directory/_LAST/out/phase_stats/$2/$1.GRCh38.hiphase.stats.tsv" | cut -d$'\t' -f3)
-	snv_VCF="$upstream_folder/out/small_variant_vcf/$1.GRCh38.small_variants.vcf.gz"
-	snv_index="$upstream_folder/out/small_variant_vcf_index/$1.GRCh38.small_variants.vcf.gz.tbi"
-	snpY=$(bcftools view -H -r chrY -f PASS "$snv_VCF##idx##$snv_index" | wc -l)
-	snpX=$(bcftools view -H -r chrX -f PASS "$snv_VCF##idx##$snv_index" | wc -l)
-	ratio_xy=$(echo "scale=2;$snpX/$snpY" | bc | sed "s/^\./0\./g")
+	local stat_file="$directory/_LAST/out/stats_file/$family_id.stats.txt"
+	local upstream_folder=$(cd "$directory"/_LAST/call-upstream-"$2"-* ; pwd)
+	local bam_reads=$(grep "$1" "$stat_file" | cut -f2)
+	local map_reads=$(grep "$1" "$stat_file" | cut -f8)
+	local mean_cov=$(grep "$1" "$stat_file" | cut -f12)
+	local index=$( expr "$2" + 1 )
+	local bam_file=$(grep 'hifi_reads.bc' "$samplesheet" | sed "${index}q;d" | cut -d'"' -f2)
+	local bam_directory=$(dirname $(dirname $bam_file)) #/.../1_X01
+	local failed_reads=$(grep -w '<Q20 Reads' /"$bam_directory"/statistics/m*.ccs_report.txt | cut -d: -f2 | cut -d' ' -f2 | sed "s/,//g")
+	local num_snp=$(grep "$1" "$stat_file" | cut -f22)
+	local ratio_hethom=$(grep "$1" "$stat_file" | cut -f24)
+	local num_het=$(grep -w '^PSC' "$directory/_LAST/out/small_variant_stats/$2/$1.GRCh38.small_variants.vcf.stats.txt" | cut -f6)
+	local num_hom=$(grep -w '^PSC' "$directory/_LAST/out/small_variant_stats/$2/$1.GRCh38.small_variants.vcf.stats.txt" | cut -f5)
+	local total_var=$(tail -n 1 "$directory/_LAST/out/phase_stats/$2/$1.GRCh38.hiphase.stats.tsv" | cut -d$'\t' -f3)
+	local snv_VCF="$upstream_folder/out/small_variant_vcf/$1.GRCh38.small_variants.vcf.gz"
+	local snv_index="$upstream_folder/out/small_variant_vcf_index/$1.GRCh38.small_variants.vcf.gz.tbi"
+	local snpY=$(bcftools view -H -r chrY -f PASS "$snv_VCF##idx##$snv_index" | wc -l)
+	local snpX=$(bcftools view -H -r chrX -f PASS "$snv_VCF##idx##$snv_index" | wc -l)
+	local ratio_xy=$(echo "scale=2;$snpX/$snpY" | bc | sed "s/^\./0\./g")
 
-	index2=($(($index+1)))
-	mosdepth_dir=$(dirname $(readlink -f $(grep -m 1 -A 3 "humanwgs_family.mosdepth_region_bed" $output_file | sed "${index2}q;d" | cut -d'"' -f2)))
+	local index2=($(($index+1)))
+	local mosdepth_dir=$(dirname $(readlink -f $(grep -m 1 -A 3 "humanwgs_family.mosdepth_region_bed" $output_file | sed "${index2}q;d" | cut -d'"' -f2)))
 	if [ -f "$mosdepth_dir/thresholdsTable.tsv" ]; then	
-		ratio5X=$(tail -n 1 "$mosdepth_dir/thresholdsTable.tsv" | cut -f1)
-		per5X=$(echo "scale=2;$ratio5X*100" | bc | sed "s/^\./0\./g")
-		message5X="\"Percent5x\": $per5X,"$'\n'$'\t'
-		ratio20X=$(tail -n 1 "$mosdepth_dir/thresholdsTable.tsv" | cut -f2)
-		per20X=$(echo "scale=2;$ratio20X*100" | bc | sed "s/^\./0\./g")
-		message20X="\"Percent20x\": $per20X,"$'\n'$'\t'
-		ratio50X=$(tail -n 1 "$mosdepth_dir/thresholdsTable.tsv" | cut -f3)
-		per50X=$(echo "scale=2;$ratio50X*100" | bc | sed "s/^\./0\./g")
-		message50X="\"Percent50x\": $per50X,"$'\n'$'\t'
+		local ratio5X=$(tail -n 1 "$mosdepth_dir/thresholdsTable.tsv" | cut -f1)
+		local per5X=$(echo "scale=2;$ratio5X*100" | bc | sed "s/^\./0\./g")
+		local message5X="\"Percent5x\": $per5X,"$'\n'$'\t'
+		local ratio20X=$(tail -n 1 "$mosdepth_dir/thresholdsTable.tsv" | cut -f2)
+		local per20X=$(echo "scale=2;$ratio20X*100" | bc | sed "s/^\./0\./g")
+		local message20X="\"Percent20x\": $per20X,"$'\n'$'\t'
+		local ratio50X=$(tail -n 1 "$mosdepth_dir/thresholdsTable.tsv" | cut -f3)
+		local per50X=$(echo "scale=2;$ratio50X*100" | bc | sed "s/^\./0\./g")
+		local message50X="\"Percent50x\": $per50X,"$'\n'$'\t'
 	else
-		message5X=""
-		message20X=""
-		message50X=""
+		local message5X=""
+		local message20X=""
+		local message50X=""
 	fi
 
 	#QC data
@@ -255,7 +255,7 @@ function buildQCData() {
 	>$SCRATCH/QCData/${family_id}_${1}_QC_new.json
 	cat << EOF >>"$SCRATCH/QCData/${family_id}_${1}_QC_new.json"
 	{
-		"sampleSn": "$1",
+		"sampleSn": "$(basename "$proband_normalized_SNV")",
 		"PassedReadsNum": $bam_reads,
 		"FailedReadsNum": $failed_reads,
 		"MappedReadsNum": $map_reads,
@@ -494,7 +494,7 @@ if [ "$send_case_to_geneyx" == true ] || [ "$run_all" == true ]; then
 		"Description": "$mode analysis for FamilyID: $family_id, composed of proband: $proband_name, mother: $mother_name $fatherDesc",
 		"SubjectId": "$proband_name",
 		"Phenotypes": "$hpoTerms",
-		"ProbandSampleId": "$proband_name",
+		"ProbandSampleId": "${proband_name}_${family_id}",
 		"AssociatedSamples": [ 
 			{
 			"Relation": "Mother",
@@ -606,7 +606,7 @@ if [ "$include_multiqc" == true ] || [ "$run_all" == true ]; then
 	dependencies+=("$(sbatch $dependencyCallLine --parsable -J multiqc_${family_id} -D $directory $here_folder/../Tools/MultiQc/multiQccall_from_image.sh)")
 fi
 
-#Cleanup step
+#Cleanup and transfer step
 if [ "$include_cleanup" == true ] || [ "$run_all" == true ]; then
 	dependencyCallLine=$(dependencyLine "${dependencies[@]}")
 	echo "dependency line for Cleanup: $dependencyCallLine"
@@ -625,7 +625,27 @@ if [ "$include_cleanup" == true ] || [ "$run_all" == true ]; then
 		exit 1
 	fi
 	globus login --flow $flow --gcs ${destination_endpoint}${destination_collection} --gcs ${source_endpoint}${source_collection}
-	echo "sbatch $dependencyCallLine -J Globus_$family_id $here_folder/globus_cli_send.sh -i $family_id -d $directory -c $config_file -h $here_folder"
-	sbatch $dependencyCallLine -J Globus_$family_id $here_folder/globus_cli_send.sh -i $family_id -d $directory -c $config_file -h $here_folder
-	exit
+	cluster=$(jq -r '.Transfers.cluster_name' ${config_file})
+	if [ "$cluster" == "Fir" ] || [ "$cluster" == "fir" ]; then
+		echo "sbatch $dependencyCallLine -J Globus_$family_id $here_folder/globus_cli_send.sh -i $family_id -d $directory -c $config_file -h $here_folder"
+		sbatch "$dependencyCallLine" -J Globus_"$family_id" "$here_folder/globus_cli_send.sh" -i "$family_id" -d "$directory" -c "$config_file" -h "$here_folder"
+	else
+		echo "Ready to send data via globus?"
+		select yn in "yes" "no"; do
+			case $yn in
+			yes)
+				echo "bash $here_folder/globus_cli_send.sh -i $family_id -d $directory -c $config_file -h $here_folder"
+				bash $here_folder/globus_cli_send.sh -i "$family_id" -d "$directory" -c "$config_file" -h "$here_folder"
+				break
+				;;
+			no)
+				break
+				;;
+			*)
+				echo "please select 1 or 2"
+				;;
+			esac
+		done
+			fi
+	exit 0
 fi

@@ -72,7 +72,7 @@ fi
 #We send only symlinks to allow globus to do the real file transfers
 #(Globus avoids symlinks)
 echo "Sending symlinks from $directory to $USER@$cluster:$destination_path/$family_id"
-echo "rsync -rlPv $identity_line--files-from=- \"$directory\" \"$USER@$cluster:$destination_path/$family_id\""
+echo "rsync -rlPv $identity_line --files-from=- \"$directory\" \"$USER@$cluster:$destination_path/$family_id\""
 if [ ! -n "$identity_line" ]; then
 	find "$directory" -type l -printf '%P\n' | \
 		rsync -rlPv --files-from=- "$directory" "$USER@$cluster:$destination_path/$family_id"
